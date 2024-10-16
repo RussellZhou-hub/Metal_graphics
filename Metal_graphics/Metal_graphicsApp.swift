@@ -11,7 +11,7 @@ import SwiftUI
 struct Metal_graphicsApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            appView()
         }
     }
 }

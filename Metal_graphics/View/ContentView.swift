@@ -27,21 +27,13 @@ struct ContentView: UIViewRepresentable {
         
         mtkView.framebufferOnly = false
         mtkView.drawableSize=mtkView.frame.size
+        mtkView.isPaused=false
         
         return mtkView
     }
     
     func updateUIView(_ uiView: MTKView, context: UIViewRepresentableContext<ContentView>){
             
-    }
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
     }
 }
 
