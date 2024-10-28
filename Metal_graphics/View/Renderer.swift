@@ -12,9 +12,12 @@ class Renderer: NSObject, MTKViewDelegate{
     var parent: ContentView
     var metalDevice: MTLDevice!
     var metalCommandQueue: MTLCommandQueue!
+    
+    let allocator: MTKMeshBufferAllocator
+    
     let pipelineState: MTLRenderPipelineState
     var scene: RenderScene
-    let mesh: TriangleMesh
+    let mesh: ObjMesh
     
     init(_ parent: ContentView){
         
@@ -24,19 +27,22 @@ class Renderer: NSObject, MTKViewDelegate{
         }
         self.metalCommandQueue = metalDevice.makeCommandQueue()
         
+        self.allocator = MTKMeshBufferAllocator(device: metalDevice)
+                
+        mesh = ObjMesh(device: metalDevice, allocator: allocator, filename: "cube")
+        
         let pipeDescriptor = MTLRenderPipelineDescriptor()
         let library = metalDevice.makeDefaultLibrary()
         pipeDescriptor.vertexFunction=library?.makeFunction(name: "vertexShader")
         pipeDescriptor.fragmentFunction = library?.makeFunction(name: "fragmentShader")
         pipeDescriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
+        pipeDescriptor.vertexDescriptor = MTKMetalVertexDescriptorFromModelIO(mesh.metalMesh.vertexDescriptor)
         
         do {
             try pipelineState=metalDevice.makeRenderPipelineState(descriptor: pipeDescriptor)
         } catch{
             fatalError()
         }
-        
-        mesh = TriangleMesh(metalDevice:metalDevice)
         
         scene=RenderScene()
         
@@ -64,6 +70,7 @@ class Renderer: NSObject, MTKViewDelegate{
         renderPassDescriptor?.colorAttachments[0].storeAction = .store
                 
         let renderEncoder = commandBuffer?.makeRenderCommandEncoder(descriptor: renderPassDescriptor!)
+        renderEncoder?.setRenderPipelineState(pipelineState)
         
         var cameraData: CameraParameters = CameraParameters()
         cameraData.view = Matrix44.create_lookat(
@@ -76,16 +83,20 @@ class Renderer: NSObject, MTKViewDelegate{
         )
         renderEncoder?.setVertexBytes(&cameraData, length:MemoryLayout<CameraParameters>.stride, index: 2)
                 
-        for triangle in scene.triangles {
+        renderEncoder?.setVertexBuffer(mesh.metalMesh.vertexBuffers[0].buffer, offset: 0, index: 0)
+        for cube in scene.cubes {
                     
-            var model: matrix_float4x4 = Matrix44.create_from_rotation(eulers: triangle.eulers)
-            model = Matrix44.create_from_translation(translation: triangle.position) * model
+            var model: matrix_float4x4 = Matrix44.create_from_rotation(eulers: cube.eulers)
+            model = Matrix44.create_from_translation(translation: cube.position) * model
             renderEncoder?.setVertexBytes(&model, length: MemoryLayout<matrix_float4x4>.stride, index: 1)
                     
-            renderEncoder?.setRenderPipelineState(pipelineState)
-            renderEncoder?.setVertexBuffer(mesh.vertexBuffer, offset: 0, index: 0)
-            renderEncoder?.drawPrimitives(type: .triangle, vertexStart: 0,vertexCount: 3)
-        }
+            for submesh in mesh.metalMesh.submeshes {
+                renderEncoder?.drawIndexedPrimitives(
+                    type: .triangle, indexCount: submesh.indexCount,
+                    indexType: submesh.indexType, indexBuffer: submesh.indexBuffer.buffer,
+                    indexBufferOffset: submesh.indexBuffer.offset
+                )
+            }        }
                 
         renderEncoder?.endEncoding()
                 
