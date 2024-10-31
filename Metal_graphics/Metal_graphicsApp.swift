@@ -9,9 +9,13 @@ import SwiftUI
 
 @main
 struct Metal_graphicsApp: App {
+    
+    @StateObject private var gameScene = GameScene() // state object is instantiation
+    
     var body: some Scene {
         WindowGroup {
-            appView()
+            appView().environmentObject(gameScene)
+            // environmentObject is abstract class
         }
     }
 }
