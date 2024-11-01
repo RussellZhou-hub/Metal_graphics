@@ -12,10 +12,6 @@ class Material {
     let sampler: MTLSamplerState
         
     init(device: MTLDevice, allocator: MTKTextureLoader, filename: String) {
-        guard let materialURL = Bundle.main.url(forResource: filename, withExtension: "jpg") else
-        {
-            fatalError()
-        }
         
         //Configure texture properties.
         let options: [MTKTextureLoader.Option: Any] = [
@@ -25,10 +21,10 @@ class Material {
 
                 
         do {
-            //texture = try allocator.newTexture(name: filename, scaleFactor: 1.0, bundle: Bundle.main, options: options)
-            texture = try allocator.newTexture(URL: materialURL,options:options)
+            texture = try allocator.newTexture(name: filename, scaleFactor: 1.0, bundle: Bundle.main, options: options)
+            //texture = try allocator.newTexture(URL: materialURL,options:options)
         } catch {
-            fatalError("couldn't load mesh")
+            fatalError("couldn't load texture")
         }
         
         let samplerDescriptor = MTLSamplerDescriptor()
